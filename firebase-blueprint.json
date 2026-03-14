@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "agencies": {
+      "title": "Agency",
+      "description": "Travel agencies listing their packages",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Agency name" },
+        "description": { "type": "string", "description": "Agency description" },
+        "contact": { "type": "string", "description": "Contact information" },
+        "logo": { "type": "string", "description": "Logo URL" },
+        "ownerUid": { "type": "string", "description": "UID of the agency owner" }
+      },
+      "required": ["name", "ownerUid"]
+    },
+    "packages": {
+      "title": "Package",
+      "description": "Travel packages offered by agencies",
+      "type": "object",
+      "properties": {
+        "agencyId": { "type": "string", "description": "Reference to agency" },
+        "title": { "type": "string", "description": "Package title" },
+        "description": { "type": "string", "description": "Package details" },
+        "price": { "type": "number", "description": "Base price" },
+        "vehicleType": { "type": "string", "enum": ["Bus", "Car", "Train", "Flight"], "description": "Mode of transport" },
+        "duration": { "type": "string", "description": "Duration (e.g., 3 Days, 2 Nights)" },
+        "startLocation": { "type": "string", "description": "Starting point" },
+        "endLocation": { "type": "string", "description": "Destination" }
+      },
+      "required": ["agencyId", "title", "price"]
+    },
+    "trips": {
+      "title": "Trip",
+      "description": "User planned trips",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the trip owner" },
+        "startLocation": { "type": "string", "description": "Starting point" },
+        "endLocation": { "type": "string", "description": "Destination" },
+        "waypoints": { "type": "array", "items": { "type": "object" }, "description": "List of POIs along the route" },
+        "estimatedCost": { "type": "number", "description": "Calculated cost" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation date" }
+      },
+      "required": ["userId", "startLocation", "endLocation"]
+    },
+    "users": {
+      "title": "User",
+      "description": "Application users",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "User's display name" },
+        "email": { "type": "string", "description": "User's email" },
+        "role": { "type": "string", "enum": ["admin", "user", "agency"], "description": "User role" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "agencies": { "schema": "agencies", "description": "Collection of travel agencies" },
+    "packages": { "schema": "packages", "description": "Collection of travel packages" },
+    "trips": { "schema": "trips", "description": "Collection of user trips" },
+    "users": { "schema": "users", "description": "Collection of user profiles" }
+  }
+}

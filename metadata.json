@@ -1,0 +1,5 @@
+{
+  "name": "RouteMaster: Smart Travel Planner",
+  "description": "A comprehensive travel planning app with route-based POI discovery, agency marketplace, and smart cost estimation.",
+  "requestFramePermissions": ["geolocation"]
+}

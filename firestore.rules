@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: name (string), email (string), role (string: admin|user|agency)
+    //
+    // Collection: agencies
+    // Fields: name (string), description (string), contact (string), logo (string), ownerUid (string)
+    //
+    // Collection: packages
+    // Fields: agencyId (string), title (string), description (string), price (number), vehicleType (string), duration (string), startLocation (string), endLocation (string)
+    //
+    // Collection: trips
+    // Fields: userId (string), startLocation (string), endLocation (string), waypoints (list), estimatedCost (number), createdAt (timestamp)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "piyushlawange123@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isAgency() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'agency';
+    }
+
+    // Validation Functions
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.email is string &&
+             data.role in ['admin', 'user', 'agency'];
+    }
+
+    function isValidAgency(data) {
+      return data.keys().hasAll(['name', 'ownerUid']) &&
+             data.name is string && data.name.size() < 100 &&
+             data.ownerUid == request.auth.uid;
+    }
+
+    function isValidPackage(data) {
+      return data.keys().hasAll(['agencyId', 'title', 'price']) &&
+             data.agencyId is string &&
+             data.title is string && data.title.size() < 200 &&
+             data.price is number && data.price >= 0;
+    }
+
+    function isValidTrip(data) {
+      return data.keys().hasAll(['userId', 'startLocation', 'endLocation']) &&
+             data.userId == request.auth.uid &&
+             data.startLocation is string &&
+             data.endLocation is string;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role;
+    }
+
+    match /agencies/{agencyId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidAgency(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.ownerUid == request.auth.uid && isValidAgency(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+    }
+
+    match /packages/{packageId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isAgency() && isValidPackage(request.resource.data);
+      allow update: if isAuthenticated() && isAgency() && isValidPackage(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && isAgency());
+    }
+
+    match /trips/{tripId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidTrip(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidTrip(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
